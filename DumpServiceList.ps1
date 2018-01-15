@@ -10,7 +10,7 @@ function Get-OutputFileName
     [OutputType([string])]
     param ()
 
-    ('ServiceList.{0}.{1}.tsv' -f $env:COMPUTERNAME, (Get-WinSystemLocale).Name)
+    ('ServiceList_{0}.{1}.{2}_{3}_{4}.tsv' -f $PSVersionTable.BuildVersion.Major, $PSVersionTable.BuildVersion.Minor, $PSVersionTable.BuildVersion.Build, (Get-WinSystemLocale).Name, $env:COMPUTERNAME)
 }
 
 function Get-DescriptionLabel
