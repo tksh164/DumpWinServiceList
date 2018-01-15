@@ -157,12 +157,22 @@ Get-Service |
     ForEach-Object -Process {
 
         $service = $_
+
+        if ($service.StartType -ne $null)
+        {
+            $startType = $service.StartType
+        }
+        else
+        {
+            $startType = Get-ServiceStartType -ServiceName $service.ServiceName
+        }
+
         $description = Get-ServiceDescription -ServiceName $service.ServiceName -DescriptionLabel $descriptionLabel
 
         [pscustomobject] @{
             ServiceName = $service.ServiceName
             DisplayName = $service.DisplayName
-            StartType = $service.StartType
+            StartType = $startType
             Description = $description
         }
     } |
