@@ -30,6 +30,36 @@ function Get-DescriptionLabel
     }
 }
 
+function Invoke-ServiceControlCommand
+{
+    [OutputType([PSCustomObject])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Arguments
+    )
+
+    # Prepare the process information.
+    $processInfo = New-Object -TypeName 'System.Diagnostics.ProcessStartInfo'
+    $processInfo.UseShellExecute = $false
+    $processInfo.RedirectStandardError = $true
+    $processInfo.RedirectStandardOutput = $true
+    $processInfo.FileName = 'C:\Windows\System32\sc.exe'
+    $processInfo.Arguments = $Arguments
+
+    # Create, execute and wait to the process.
+    $process = New-Object -TypeName 'System.Diagnostics.Process'
+    $process.StartInfo = $processInfo
+    [void] $process.Start()
+    $process.WaitForExit()
+
+    # Retrieve the results of invoke command.
+    [PSCustomObject] @{
+        ExitCode = $process.ExitCode
+        StdOut = $process.StandardOutput.ReadToEnd()
+        StdErr = $process.StandardError.ReadToEnd()
+    }
+}
+
 function Get-ServiceDescription
 {
     [OutputType([string])]
