@@ -72,41 +72,27 @@ function Get-ServiceDescription
         [string] $DescriptionLabel = 'DESCRIPTION'
     )
 
-    # Prepare the process information.
-    $processInfo = New-Object -TypeName 'System.Diagnostics.ProcessStartInfo'
-    $processInfo.UseShellExecute = $false
-    $processInfo.RedirectStandardError = $true
-    $processInfo.RedirectStandardOutput = $true
-    $processInfo.FileName = 'C:\Windows\System32\sc.exe'
-    $processInfo.Arguments = ('qdescription "{0}" 4096' -f $ServiceName)
+    # Invoke the sc.exe command.
+    $results = Invoke-ServiceControlCommand -Arguments ('qdescription "{0}" 4096' -f $ServiceName)
 
-    # Create, execute and wait to the process.
-    $process = New-Object -TypeName 'System.Diagnostics.Process'
-    $process.StartInfo = $processInfo
-    [void] $process.Start()
-    $process.WaitForExit()
-
-    # Retrieve the stdout and stderr from the process.
-    $stdout = $process.StandardOutput.ReadToEnd()
-    $stderr = $process.StandardError.ReadToEnd()
-
-    if ($process.ExitCode -eq 0)
+    if ($results.ExitCode -eq 0)
     {
-        # Extract the description of the service from .
+        # Extract the description of the service from stdout.
         $pattern = ('^.+{0}:(.*)$' -f $DescriptionLabel)
-        $match = [System.Text.RegularExpressions.regex]::Match($stdout, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        $match = [System.Text.RegularExpressions.regex]::Match($results.StdOut, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
         $description = $match.Captures[0].Groups[1].Value.Trim()
 
         $description
     }
     else
     {
-        if ($process.ExitCode -eq 15100)
+        if ($results.ExitCode -eq 15100)
         {
-            ('Cannot read description. Error Code: {0}' -f $process.ExitCode)
+            ('Cannot read description. Error Code: {0}' -f $results.ExitCode)
         }
-        else {
-            throw ('Failed sc.exe for {0} with {1}. {2}' -f $ServiceName, $process.ExitCode, $stderr)
+        else
+        {
+            throw ('Failed sc.exe for {0} with {1}. {2}' -f $ServiceName, $results.ExitCode, $results.StdErr)
         }
     }
 }
