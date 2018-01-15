@@ -60,6 +60,50 @@ function Invoke-ServiceControlCommand
     }
 }
 
+function Get-ServiceStartType
+{
+    [OutputType([string])]
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $ServiceName
+    )
+
+    # Invoke the sc.exe command.
+    $results = Invoke-ServiceControlCommand -Arguments ('qc "{0}"' -f $ServiceName)
+
+    if ($results.ExitCode -eq 0)
+    {
+        # Extract the start type of the service from the stdout.
+        $pattern = '^\s+START_TYPE\s+:\s+([0-9])\s+([A-Z_]+).+$'
+        $match = [System.Text.RegularExpressions.regex]::Match($results.StdOut, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
+        $startTypeAsNum = $match.Captures[0].Groups[1].Value.Trim()
+        $startTypeAsString = $match.Captures[0].Groups[2].Value.Trim()
+
+        # Return the start type of the service.
+        if (($startTypeAsNum -eq 2) -and ($startTypeAsString -eq 'AUTO_START'))
+        {
+            'Automatic'
+        }
+        elseif (($startTypeAsNum -eq 3) -and ($startTypeAsString -eq 'DEMAND_START'))
+        {
+            'Manual'
+        }
+        elseif (($startTypeAsNum -eq 4) -and ($startTypeAsString -eq 'DISABLED'))
+        {
+            'Disabled'
+        }
+        else
+        {
+            ('Unknown ({0}: {1})' -f $startTypeAsNum, $startTypeAsString)
+        }
+    }
+    else
+    {
+        throw ('Failed sc.exe for {0} with {1}. {2}' -f $ServiceName, $results.ExitCode, $results.StdErr)
+    }
+}
+
 function Get-ServiceDescription
 {
     [OutputType([string])]
